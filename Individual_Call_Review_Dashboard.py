@@ -14,7 +14,7 @@ def load_call_data(session):
         chat_transcript as TRANSCRIPT,
         qa_score
     FROM
-        scoring_summary;
+        qa_scoring_summary;
     """
     try:
         snowpark_df = session.sql(query)
@@ -65,8 +65,8 @@ if not df_calls.empty:
 
             # --- Display Call Summary ---
             st.subheader("Call Summary")
-            st.write(qa_score_dict.get('overall_summary', {}).get('agent_persona', 'No summary available.'))
-            final_score = qa_score_dict.get('overall_summary', {}).get('final_score', 0)
+            st.write(qa_score_dict.get('agent_persona_summary', 'No summary available.'))
+            final_score = qa_score_dict.get('final', {}).get('final_score', 0)
             st.metric(label="Final Score", value=f"{final_score:.2f}")
 
 
@@ -77,11 +77,11 @@ if not df_calls.empty:
 
             # --- Display Detailed Scorecard ---
             st.subheader("Detailed Scorecard")
-            scorecard = qa_score_dict.get('scorecard', [])
+            scorecard = qa_score_dict.get('categories', [])
 
             if scorecard:
                 for category in scorecard:
-                    category_name = category.get('category', 'Unnamed Category')
+                    category_name = category.get('name', 'Unnamed Category')
                     elements = category.get('elements', [])
                     
                     # Calculate the average score for the category
