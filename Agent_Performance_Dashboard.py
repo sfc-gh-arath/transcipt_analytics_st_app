@@ -108,7 +108,7 @@ df_elements = load_all_element_scores(session)
 if not df_elements.empty:
     # --- ANALYSIS 1: Overall Skill Gaps (Team-Wide) ---
     st.header("Overall Skill Gaps (Team-Wide)")
-    df_skill_gaps = df_elements.groupby('ELEMENT_NAME')['SCORE'].mean().reset_index()
+    df_skill_gaps = df_elements.groupby('ELEMENT_NAME')['ELEMENT_SCORE'].mean().reset_index()
 
     skill_gap_chart = alt.Chart(df_skill_gaps).mark_bar().encode(
         x=alt.X('SCORE:Q', title='Average Score Across All Agents'),
