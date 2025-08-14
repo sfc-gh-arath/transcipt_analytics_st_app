@@ -11,7 +11,7 @@ def load_call_data(session):
     SELECT
         agent,
         chat_id,
-        chat_transcript as TRANSCRIPT,
+        TRANSCRIPT,
         qa_score
     FROM
         qa_scoring_summary;

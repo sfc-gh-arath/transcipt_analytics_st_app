@@ -26,12 +26,12 @@ def load_element_scores(session):
 def load_final_scores(session):
     """Loads the final score for each chat to be used in the overview chart."""
     query = """
-    SELECT
+    SELECT DISTINCT
         agent,
         chat_id,
-        qa_score
+        FINAL_SCORE
     FROM
-        qa_scoring_summary;
+        qa_scoring_view;
     """
     try:
         snowpark_df = session.sql(query)
@@ -64,14 +64,14 @@ if not df_elements.empty and not df_final_scores.empty:
         st.header(f"Performance Across All Calls for {selected_agent}")
         agent_calls = df_final_scores[df_final_scores['AGENT'] == selected_agent].copy()
 
-        def get_final_score(qa_score_str):
-            try:
-                score_dict = eval(qa_score_str)
-                return score_dict.get('final', {}).get('final_score', 0)
-            except:
-                return 0
+        # def get_final_score(qa_score_str):
+        #     try:
+        #         score_dict = eval(qa_score_str)
+        #         return score_dict.get('final', {}).get('final_score', 0)
+        #     except:
+        #         return 0
 
-        agent_calls['FINAL_SCORE'] = agent_calls['QA_SCORE'].apply(get_final_score)
+        # agent_calls['FINAL_SCORE'] = agent_calls['QA_SCORE'].apply(get_final_score)
 
         call_performance_chart = alt.Chart(agent_calls).mark_bar().encode(
             x=alt.X('CHAT_ID:N', title='Chat ID', sort=alt.EncodingSortField(
