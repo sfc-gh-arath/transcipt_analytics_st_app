@@ -9,12 +9,11 @@ def load_call_data(session):
     """Loads all necessary call data, including agent, chat_id, transcript, and the full QA score object."""
     query = """
     SELECT
-        agent,
-        chat_id,
-        TRANSCRIPT,
-        qa_score
+    v.* ,
+    s.transcript
     FROM
-        qa_scoring_summary;
+    QA_SCORING_VIEW v inner join
+    QA_SCORING_SUMMARY s on v.chat_id = s.chat_id;       
     """
     try:
         snowpark_df = session.sql(query)
@@ -49,55 +48,58 @@ if not df_calls.empty:
 
         if selected_call:
             # Get the data for the selected call
-            call_data = agent_calls[agent_calls['CHAT_ID'] == selected_call].iloc[0]
+            call_data = df_calls[df_calls['CHAT_ID'] == selected_call]#.iloc[0]
             
             # The qa_score is loaded as a string, so we need to parse it into a dictionary
             # We use `eval()` here, which is safe in this context because the data is coming
             # from our trusted Snowflake database.
-            try:
-                qa_score_dict = eval(call_data['QA_SCORE'])
-            except:
-                st.error("Could not parse the QA score data for this call.")
-                st.stop()
+            # try:
+            #     qa_score_dict = eval(call_data['QA_SCORE'])
+            # except:
+            #     st.error("Could not parse the QA score data for this call.")
+            #     st.stop()
 
 
             st.header(f"Analysis for Chat ID: {selected_call}")
 
             # --- Display Call Summary ---
             st.subheader("Call Summary")
-            st.write(qa_score_dict.get('agent_persona_summary', 'No summary available.'))
-            final_score = qa_score_dict.get('final', {}).get('final_score', 0)
+            # qa_score_dict = call_data['QA_SCORE']
+            st.text(call_data['AGENT_PERSONA_SUMMARY'].unique()[0])
+            final_score = call_data['FINAL_SCORE'].unique()[0]
             st.metric(label="Final Score", value=f"{final_score:.2f}")
 
 
             # --- Display Transcript ---
             with st.expander("View Full Call Transcript"):
-                st.text(call_data['TRANSCRIPT'])
+                st.text(call_data['TRANSCRIPT'].iloc[0])
 
 
             # --- Display Detailed Scorecard ---
             st.subheader("Detailed Scorecard")
-            scorecard = qa_score_dict.get('categories', [])
+            call_data_scores = call_data.drop(['AGENT', 'CHAT_ID','AGENT_PERSONA_SUMMARY','FINAL_SCORE','FINAL_EXPLANATION','TRANSCRIPT'], axis=1)
+            st.write(call_data_scores)
+            # scorecard = call_data['CATEGORY_NAME']
 
-            if scorecard:
-                for category in scorecard:
-                    category_name = category.get('name', 'Unnamed Category')
-                    elements = category.get('elements', [])
+            # if scorecard:
+            #     for category in scorecard:
+            #         category_name = category.get('name', 'Unnamed Category')
+            #         elements = category.get('elements', [])
                     
-                    # Calculate the average score for the category
-                    if elements:
-                        category_score = sum(el.get('score', 0) for el in elements) / len(elements)
-                    else:
-                        category_score = 0
+            #         # Calculate the average score for the category
+            #         if elements:
+            #             category_score = sum(el.get('score', 0) for el in elements) / len(elements)
+            #         else:
+            #             category_score = 0
                     
-                    # Display category header with its average score
-                    st.markdown(f"**{category_name}** (Average Score: {category_score:.2f})")
+            #         # Display category header with its average score
+            #         st.markdown(f"**{category_name}** (Average Score: {category_score:.2f})")
                     
-                    # Create a DataFrame for the elements in this category
-                    df_elements = pd.DataFrame(elements)
-                    st.dataframe(df_elements[['name', 'score', 'justification']], use_container_width=True)
-            else:
-                st.warning("No scorecard data found for this call.")
+            #         # Create a DataFrame for the elements in this category
+            #         df_elements = pd.DataFrame(elements)
+            #         st.dataframe(df_elements[['name', 'score', 'justification']], use_container_width=True)
+            # else:
+            #     st.warning("No scorecard data found for this call.")
 
 else:
     st.warning("No call data returned from the query. Cannot generate dashboard.")
