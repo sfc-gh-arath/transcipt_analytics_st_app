@@ -111,13 +111,13 @@ if not df_elements.empty:
     df_skill_gaps = df_elements.groupby('ELEMENT_NAME')['ELEMENT_SCORE'].mean().reset_index()
 
     skill_gap_chart = alt.Chart(df_skill_gaps).mark_bar().encode(
-        x=alt.X('SCORE:Q', title='Average Score Across All Agents'),
+        x=alt.X('ELEMENT_SCORE:Q', title='Average Score Across All Agents'),
         y=alt.Y('ELEMENT_NAME:N', title='Skill Element', sort='-x'),
         tooltip=['ELEMENT_NAME', alt.Tooltip('SCORE', title='Average Score', format='.2f')]
     ).properties(height=alt.Step(15))
     st.altair_chart(skill_gap_chart, use_container_width=True)
     with st.expander("View Skill Gap Raw Data"):
-        st.dataframe(df_skill_gaps.sort_values(by='SCORE', ascending=False))
+        st.dataframe(df_skill_gaps.sort_values(by='ELEMENT_SCORE', ascending=False))
 
 else:
     st.warning("No element-level score data returned from the query. Cannot generate additional analyses.")
