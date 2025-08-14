@@ -113,7 +113,7 @@ if not df_elements.empty:
     skill_gap_chart = alt.Chart(df_skill_gaps).mark_bar().encode(
         x=alt.X('ELEMENT_SCORE:Q', title='Average Score Across All Agents'),
         y=alt.Y('ELEMENT_NAME:N', title='Skill Element', sort='-x'),
-        tooltip=['ELEMENT_NAME', alt.Tooltip('SCORE', title='Average Score', format='.2f')]
+        tooltip=['ELEMENT_NAME', alt.Tooltip('ELEMENT_SCORE', title='Average Score', format='.2f')]
     ).properties(height=alt.Step(15))
     st.altair_chart(skill_gap_chart, use_container_width=True)
     with st.expander("View Skill Gap Raw Data"):
