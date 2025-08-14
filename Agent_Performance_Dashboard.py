@@ -14,9 +14,9 @@ def load_overall_scores(session):
     query = """
     SELECT
         agent,
-        AVG(qa_score:overall_summary:final_score::FLOAT) AS average_final_score
+        AVG(final_score) AS average_final_score
     FROM
-        scoring_summary
+        qa_scoring_view
     GROUP BY
         agent;
     """
@@ -31,16 +31,14 @@ def load_category_scores(session):
     """Loads the average score for each agent per category for the heatmap."""
     query = """
     SELECT
-        t.agent,
-        scorecard.value:category::STRING AS category,
-        AVG(elements.value:score::NUMBER) AS average_score
+        agent,
+        category_name AS category,
+        AVG(category_adjusted_score) AS average_score
     FROM
-        scoring_summary AS t,
-        LATERAL FLATTEN(input => t.qa_score:scorecard) AS scorecard,
-        LATERAL FLATTEN(input => scorecard.value:elements) AS elements
+        qa_scoring_view
     GROUP BY
-        t.agent,
-        category;
+        agent,
+        category;        
     """
     try:
         snowpark_df = session.sql(query)
@@ -53,13 +51,11 @@ def load_all_element_scores(session):
     """Loads all individual element scores for every agent and chat."""
     query = """
     SELECT
-        t.agent,
-        elements.value:name::STRING AS element_name,
-        elements.value:score::NUMBER AS score
+        agent,
+        element_name,
+        element_score
     FROM
-        scoring_summary AS t,
-        LATERAL FLATTEN(input => t.qa_score:scorecard) AS scorecard,
-        LATERAL FLATTEN(input => scorecard.value:elements) AS elements;
+        qa_scoring_view;        
     """
     try:
         snowpark_df = session.sql(query)
