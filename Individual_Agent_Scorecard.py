@@ -10,13 +10,11 @@ def load_element_scores(session):
     """Loads all individual element scores for the detailed scorecard."""
     query = """
     SELECT
-        t.agent,
-        elements.value:name::STRING AS element_name,
-        elements.value:score::NUMBER AS score
+        agent,
+        element_name,
+        element_score as SCORE
     FROM
-        scoring_summary AS t,
-        LATERAL FLATTEN(input => t.qa_score:scorecard) AS scorecard,
-        LATERAL FLATTEN(input => scorecard.value:elements) AS elements;
+        qa_scoring_view;        
     """
     try:
         snowpark_df = session.sql(query)
@@ -33,7 +31,7 @@ def load_final_scores(session):
         chat_id,
         qa_score
     FROM
-        scoring_summary;
+        qa_scoring_summary;
     """
     try:
         snowpark_df = session.sql(query)
@@ -69,7 +67,7 @@ if not df_elements.empty and not df_final_scores.empty:
         def get_final_score(qa_score_str):
             try:
                 score_dict = eval(qa_score_str)
-                return score_dict.get('overall_summary', {}).get('final_score', 0)
+                return score_dict.get('final', {}).get('final_score', 0)
             except:
                 return 0
 
