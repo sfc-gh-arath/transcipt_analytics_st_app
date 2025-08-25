@@ -12,7 +12,7 @@ def load_call_data(session):
     v.* ,
     s.transcript
     FROM
-    QA_SCORING_VIEW v inner join
+    SCORING_VIEW v inner join
     QA_SCORING_SUMMARY s on v.chat_id = s.chat_id;       
     """
     try:
@@ -49,35 +49,30 @@ if not df_calls.empty:
         if selected_call:
             # Get the data for the selected call
             call_data = df_calls[df_calls['CHAT_ID'] == selected_call]#.iloc[0]
-            
-            # The qa_score is loaded as a string, so we need to parse it into a dictionary
-            # We use `eval()` here, which is safe in this context because the data is coming
-            # from our trusted Snowflake database.
-            # try:
-            #     qa_score_dict = eval(call_data['QA_SCORE'])
-            # except:
-            #     st.error("Could not parse the QA score data for this call.")
-            #     st.stop()
-
-
-            st.header(f"Analysis for Chat ID: {selected_call}")
+ 
+            st.subheader(f"Analysis for Chat ID: {selected_call}")
 
             # --- Display Call Summary ---
             st.subheader("Call Summary")
             # qa_score_dict = call_data['QA_SCORE']
-            st.text(call_data['AGENT_PERSONA_SUMMARY'].unique()[0])
-            final_score = call_data['FINAL_SCORE'].unique()[0]
-            st.metric(label="Final Score", value=f"{final_score:.2f}")
+            st.write(call_data['AGENT_PERSONA_SUMMARY'].unique()[0])
+            
+            final_score = call_data['LLM_SCORE'].sum()
+            final_pissible_score = call_data['POSSIBLE_MAX_SCORE'].sum()
+            
+            st.metric(label="Final Score/Possble Max Score", value=f"{final_score:.2f}/{final_pissible_score:.2f}")
+
+            
 
 
             # --- Display Transcript ---
             with st.expander("View Full Call Transcript"):
-                st.text(call_data['TRANSCRIPT'].iloc[0])
+                st.text(call_data['TRANSCRIPT'].iloc[0].iloc[0])
 
 
             # --- Display Detailed Scorecard ---
             st.subheader("Detailed Scorecard")
-            call_data_scores = call_data.drop(['AGENT', 'CHAT_ID','AGENT_PERSONA_SUMMARY','FINAL_SCORE','FINAL_EXPLANATION','TRANSCRIPT'], axis=1)
+            call_data_scores = call_data.drop(['AGENT', 'ELEMENT_ID','CHAT_ID','AGENT_PERSONA_SUMMARY','TRANSCRIPT','KB_ARTICLES'], axis=1)
             st.write(call_data_scores)
             # scorecard = call_data['CATEGORY_NAME']
 
