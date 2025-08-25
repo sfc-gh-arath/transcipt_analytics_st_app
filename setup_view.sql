@@ -1,20 +1,39 @@
-create or replace view QA_SCORING_VIEW
+create or replace view SCORING_VIEW
 as
+WITH llm AS (
+  SELECT
+      q.chat_id,
+      q.agent,
+      q.transcript,
+      q.sf_case,
+      q.kb_articles,
+      q.qa_score:"agent_persona_summary"::string AS agent_persona_summary,
+      e.value:"element_id"::string               AS element_id,
+      e.value:"name"::string                     AS element_name,        -- col1
+      e.value:"score"::number                    AS llm_score,           -- col2
+      e.value:"rationale"::string                AS element_rationale,
+      e.value:"insufficient_evidence"::boolean   AS insufficient_evidence,
+      e.value:"evidence"                         AS evidence             -- array/VARIANT
+  FROM qa_scoring_summary q,
+       LATERAL FLATTEN(input => q.qa_score:"elements") e
+)
 SELECT
-    t.agent,
-    t.chat_id,
-    PARSE_JSON(t.qa_score):agent_persona_summary::VARCHAR as agent_persona_summary,
-    PARSE_JSON(t.qa_score):final.final_score::FLOAT as final_score,
-    PARSE_JSON(t.qa_score):final.explanation::VARCHAR as final_explanation,
-    c.value:name::VARCHAR as category_name,
-    c.value:weight::FLOAT as category_weight,
-    c.value:base_score::FLOAT as category_base_score,
-    c.value:adjusted_score::FLOAT as category_adjusted_score,
-    e.value:name::VARCHAR as element_name,
-    e.value:score::NUMBER as element_score,
-    e.value:max_score::NUMBER as element_max_score,
-    e.value:rationale::VARCHAR as element_rationale,
-    e.value:insufficient_evidence::BOOLEAN as insufficient_evidence
-FROM DEMO_DB.CRM.qa_scoring_summary t,
-LATERAL FLATTEN(input => t.qa_score:categories) c,
-LATERAL FLATTEN(input => c.value:elements) e;
+    llm.element_name                             AS element_name,
+    llm.element_id                               AS element_id,    
+    llm.llm_score                                AS llm_score,
+    TRY_TO_NUMBER(h.score)                       AS human_score,
+    (llm.llm_score = TRY_TO_NUMBER(h.score))     AS scores_match,
+     TRY_TO_NUMBER(h.possible_score)             AS possible_max_score,
+    llm.insufficient_evidence                    AS insufficient_evidence,
+    llm.element_rationale                        AS rationale,
+    llm.evidence                                 AS evidence,
+    llm.agent                                    AS agent,
+    llm.chat_id                                  AS chat_id,
+    llm.agent_persona_summary                    AS agent_persona_summary,
+    llm.transcript                               AS transcript,
+    llm.kb_articles
+FROM llm
+LEFT JOIN lulu_qm_scores h
+  ON h.interaction_id = llm.sf_case
+ AND TO_VARCHAR(h.element_id) = llm.element_id
+ORDER BY llm.chat_id, llm.element_id ASC;
