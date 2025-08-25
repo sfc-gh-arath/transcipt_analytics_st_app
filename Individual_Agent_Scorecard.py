@@ -12,9 +12,9 @@ def load_element_scores(session):
     SELECT
         agent,
         element_name,
-        element_score as SCORE
+        LLM_SCORE as SCORE
     FROM
-        qa_scoring_view;        
+        scoring_view;        
     """
     try:
         snowpark_df = session.sql(query)
@@ -29,9 +29,10 @@ def load_final_scores(session):
     SELECT DISTINCT
         agent,
         chat_id,
-        FINAL_SCORE
+        sum(LLM_SCORE) as FINAL_SCORE
     FROM
-        qa_scoring_view;
+        scoring_view
+        group by all;
     """
     try:
         snowpark_df = session.sql(query)
@@ -64,29 +65,6 @@ if not df_elements.empty and not df_final_scores.empty:
         st.header(f"Performance Across All Calls for {selected_agent}")
         agent_calls = df_final_scores[df_final_scores['AGENT'] == selected_agent].copy()
         st.bar_chart(agent_calls, x='CHAT_ID', y= 'FINAL_SCORE' )
-        # xbar_chart= alt.Chart(agent_calls).mark_bar().encode(
-        #     x=alt.X('CHAT_ID:N', title='Chat ID',  sort='-y' ),
-        #     y=alt.Y('FINAL_SCORE:Q', title='Final Score', scale=alt.Scale(domain=[0, 5]))
-        # ).properties(height=300)
-        # st.altair_chart(xbar_chart, use_container_width=True)
-
-        # def get_final_score(qa_score_str):
-        #     try:
-        #         score_dict = eval(qa_score_str)
-        #         return score_dict.get('final', {}).get('final_score', 0)
-        #     except:
-        #         return 0
-
-        # agent_calls['FINAL_SCORE'] = agent_calls['QA_SCORE'].apply(get_final_score)
-
-        # call_performance_chart = alt.Chart(agent_calls).mark_bar().encode(
-        #     x=alt.X('CHAT_ID:N', title='Chat ID', sort=alt.EncodingSortField(
-        #         field="FINAL_SCORE", op="sum", order='descending'
-        #     )),
-        #     y=alt.Y('FINAL_SCORE:Q', title='Final Score', scale=alt.Scale(domain=[0, 5])),
-        #     tooltip=['CHAT_ID', alt.Tooltip('FINAL_SCORE', format='.2f')]
-        # ).properties(height=300)
-        # st.altair_chart(call_performance_chart, use_container_width=True)
 
         st.markdown("---") # Add a separator
 
