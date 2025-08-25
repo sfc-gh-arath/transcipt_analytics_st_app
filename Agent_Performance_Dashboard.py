@@ -13,12 +13,17 @@ def load_overall_scores(session):
     """Loads the average final score for each agent."""
     query = """
     SELECT
-        agent,
-        AVG(final_score) AS average_final_score
-    FROM
-        qa_scoring_view
-    GROUP BY
-        agent;
+    agent,
+    AVG(total_score) AS average_final_score
+    FROM (
+        SELECT 
+            agent,
+            CHAT_ID,
+            SUM(LLM_SCORE) as total_score
+        FROM scoring_view
+        GROUP BY agent, CHAT_ID
+    )
+    GROUP BY agent;
     """
     try:
         snowpark_df = session.sql(query)
@@ -32,13 +37,13 @@ def load_category_scores(session):
     query = """
     SELECT
         agent,
-        category_name AS category,
-        AVG(category_adjusted_score) AS average_score
+        ELEMENT_NAME AS category,
+        AVG(LLM_SCORE) AS average_score
     FROM
-        qa_scoring_view
+        scoring_view
     GROUP BY
         agent,
-        category;        
+        ELEMENT_NAME;        
     """
     try:
         snowpark_df = session.sql(query)
@@ -53,9 +58,9 @@ def load_all_element_scores(session):
     SELECT
         agent,
         element_name,
-        element_score
+        LLM_SCORE as element_score
     FROM
-        qa_scoring_view;        
+        scoring_view;        
     """
     try:
         snowpark_df = session.sql(query)
