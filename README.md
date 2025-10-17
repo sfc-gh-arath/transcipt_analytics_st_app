@@ -3,6 +3,7 @@
 
 ## Load Sample data
 
+KNOWLEDGE_ARTICLES.csv and CHAT_TRANSCRIPT data files to tables with the same name.
 
 ## Run the Notebook
 Import the notebook and change the database and schema name to match where you have your data
