@@ -9,11 +9,12 @@ def load_call_data(session):
     """Loads all necessary call data, including agent, chat_id, transcript, and the full QA score object."""
     query = """
     SELECT
-    v.* ,
-    s.transcript
+    v.*
+    --,s.transcript
     FROM
-    SCORING_VIEW v inner join
-    QA_SCORING_SUMMARY s on v.chat_id = s.chat_id;       
+    SCORING_VIEW v 
+    --inner join    QA_SCORING_SUMMARY s on v.chat_id = s.chat_id
+    ;       
     """
     try:
         snowpark_df = session.sql(query)
@@ -67,13 +68,14 @@ if not df_calls.empty:
 
             # --- Display Transcript ---
             with st.expander("View Full Call Transcript"):
-                st.text(call_data['TRANSCRIPT'].iloc[0].iloc[0])
+                st.text(call_data['TRANSCRIPT'].iloc[0])
 
 
             # --- Display Detailed Scorecard ---
             st.subheader("Detailed Scorecard")
-            call_data_scores = call_data.drop(['AGENT', 'ELEMENT_ID','CHAT_ID','AGENT_PERSONA_SUMMARY','TRANSCRIPT','KB_ARTICLES'], axis=1)
-            st.write(call_data_scores)
+            st.write(call_data)
+            # call_data_scores = call_data.drop(['AGENT', 'ELEMENT_ID','CHAT_ID','AGENT_PERSONA_SUMMARY','TRANSCRIPT','KB_WINDOW_CHUNKS'], axis=1)
+            # st.write(call_data_scores)
             # scorecard = call_data['CATEGORY_NAME']
 
             # if scorecard:
